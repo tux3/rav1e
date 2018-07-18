@@ -27,8 +27,10 @@ use std::*;
 const PLANES: usize = 3;
 
 const PARTITION_PLOFFSET: usize = 4;
-const PARTITION_CONTEXTS: usize = 20;
-pub const PARTITION_TYPES: usize = 4;
+const PARTITION_BLOCK_SIZES: usize = 4 + 1;
+const PARTITION_CONTEXTS_PRIMARY: usize = PARTITION_BLOCK_SIZES * PARTITION_PLOFFSET;
+const PARTITION_CONTEXTS: usize = PARTITION_CONTEXTS_PRIMARY;
+pub const PARTITION_TYPES: usize = 10;
 
 pub const MI_SIZE_LOG2: usize = 2;
 const MI_SIZE: usize = (1 << MI_SIZE_LOG2);
@@ -182,26 +184,30 @@ pub fn get_plane_block_size(bsize: BlockSize, subsampling_x: usize, subsampling_
 // a blocksize partition  1111 means we split 64x64, 32x32, 16x16
 // and 8x8.  1000 means we just split the 64x64 to 32x32
 static partition_context_lookup: [[u8; 2]; BlockSize::BLOCK_SIZES_ALL] = [
-  [ 15, 15 ],  // 4X4   - [0b1111, 0b1111]
-  [ 15, 14 ],  // 4X8   - [0b1111, 0b1110]
-  [ 14, 15 ],  // 8X4   - [0b1110, 0b1111]
-  [ 14, 14 ],  // 8X8   - [0b1110, 0b1110]
-  [ 14, 12 ],  // 8X16  - [0b1110, 0b1100]
-  [ 12, 14 ],  // 16X8  - [0b1100, 0b1110]
-  [ 12, 12 ],  // 16X16 - [0b1100, 0b1100]
-  [ 12, 8 ],   // 16X32 - [0b1100, 0b1000]
-  [ 8, 12 ],   // 32X16 - [0b1000, 0b1100]
-  [ 8, 8 ],    // 32X32 - [0b1000, 0b1000]
-  [ 8, 0 ],    // 32X64 - [0b1000, 0b0000]
-  [ 0, 8 ],    // 64X32 - [0b0000, 0b1000]
-  [ 0, 0 ],    // 64X64 - [0b0000, 0b0000]
-
-  [ 15, 12 ],  // 4X16 - [0b1111, 0b1100]
-  [ 12, 15 ],  // 16X4 - [0b1100, 0b1111]
-  [ 8, 14 ],   // 8X32 - [0b1110, 0b1000]
-  [ 14, 8 ],   // 32X8 - [0b1000, 0b1110]
-  [ 12, 0 ],   // 16X64- [0b1100, 0b0000]
-  [ 0, 12 ],   // 64X16- [0b0000, 0b1100]
+  [ 31, 31 ],  // 4X4   - {0b11111, 0b11111}
+  [ 31, 30 ],  // 4X8   - {0b11111, 0b11110}
+  [ 30, 31 ],  // 8X4   - {0b11110, 0b11111}
+  [ 30, 30 ],  // 8X8   - {0b11110, 0b11110}
+  [ 30, 28 ],  // 8X16  - {0b11110, 0b11100}
+  [ 28, 30 ],  // 16X8  - {0b11100, 0b11110}
+  [ 28, 28 ],  // 16X16 - {0b11100, 0b11100}
+  [ 28, 24 ],  // 16X32 - {0b11100, 0b11000}
+  [ 24, 28 ],  // 32X16 - {0b11000, 0b11100}
+  [ 24, 24 ],  // 32X32 - {0b11000, 0b11000}
+  [ 24, 16 ],  // 32X64 - {0b11000, 0b10000}
+  [ 16, 24 ],  // 64X32 - {0b10000, 0b11000}
+  [ 16, 16 ],  // 64X64 - {0b10000, 0b10000}
+  [ 16, 0 ],   // 64X128- {0b10000, 0b00000}
+  [ 0, 16 ],   // 128X64- {0b00000, 0b10000}
+  [ 0, 0 ],    // 128X128-{0b00000, 0b00000}
+  [ 31, 28 ],  // 4X16  - {0b11111, 0b11100}
+  [ 28, 31 ],  // 16X4  - {0b11100, 0b11111}
+  [ 30, 24 ],  // 8X32  - {0b11110, 0b11000}
+  [ 24, 30 ],  // 32X8  - {0b11000, 0b11110}
+  [ 28, 16 ],  // 16X64 - {0b11100, 0b10000}
+  [ 16, 28 ],  // 64X16 - {0b10000, 0b11100}
+  [ 24, 0 ],   // 32X128- {0b11000, 0b00000}
+  [ 0, 24 ],   // 128X32- {0b00000, 0b11000}
 ];
 
 static size_group_lookup: [u8; BlockSize::BLOCK_SIZES_ALL] = [

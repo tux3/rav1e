@@ -43,17 +43,22 @@ pub enum BlockSize {
   BLOCK_32X64,
   BLOCK_64X32,
   BLOCK_64X64,
+  BLOCK_64X128,
+  BLOCK_128X64,
+  BLOCK_128X128,
   BLOCK_4X16,
   BLOCK_16X4,
   BLOCK_8X32,
   BLOCK_32X8,
   BLOCK_16X64,
   BLOCK_64X16,
+  BLOCK_32X128,
+  BLOCK_128X32,
   BLOCK_INVALID
 }
 
 impl BlockSize {
-  pub const BLOCK_SIZES_ALL: usize = 19;
+  pub const BLOCK_SIZES_ALL: usize = 24;
 
   const BLOCK_SIZE_WIDTH_LOG2: [usize; BlockSize::BLOCK_SIZES_ALL] =
     [2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 2, 4, 3, 5, 4, 6];
