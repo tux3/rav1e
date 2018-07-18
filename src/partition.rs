@@ -61,10 +61,10 @@ impl BlockSize {
   pub const BLOCK_SIZES_ALL: usize = 24;
 
   const BLOCK_SIZE_WIDTH_LOG2: [usize; BlockSize::BLOCK_SIZES_ALL] =
-    [2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 2, 4, 3, 5, 4, 6];
+    [2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 6, 6, 7, 7, 2, 4, 3, 5, 4, 6, 5, 7];
 
   const BLOCK_SIZE_HEIGHT_LOG2: [usize; BlockSize::BLOCK_SIZES_ALL] =
-    [2, 3, 2, 3, 4, 3, 4, 5, 4, 5, 6, 5, 6, 4, 2, 5, 3, 6, 4];
+    [2, 3, 2, 3, 4, 3, 4, 5, 4, 5, 6, 5, 6, 7, 6, 7, 4, 2, 5, 3, 6, 4, 7, 5];
 
   pub fn cfl_allowed(self) -> bool {
     // TODO: fix me when enabling EXT_PARTITION_TYPES

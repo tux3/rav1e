@@ -167,12 +167,17 @@ static ss_size_lookup: [[[BlockSize; 2]; 2]; BlockSize::BLOCK_SIZES_ALL] = [
   [  [ BLOCK_32X64, BLOCK_32X32 ], [BLOCK_16X64, BLOCK_16X32 ] ],
   [  [ BLOCK_64X32, BLOCK_64X16 ], [BLOCK_32X32, BLOCK_32X16 ] ],
   [  [ BLOCK_64X64, BLOCK_64X32 ], [BLOCK_32X64, BLOCK_32X32 ] ],
+  [  [ BLOCK_64X128, BLOCK_64X64 ], [ BLOCK_32X128, BLOCK_32X64 ] ],
+  [  [ BLOCK_128X64, BLOCK_128X32 ], [ BLOCK_64X64, BLOCK_64X32 ] ],
+  [  [ BLOCK_128X128, BLOCK_128X64 ], [ BLOCK_64X128, BLOCK_64X64 ] ],
   [  [ BLOCK_4X16, BLOCK_4X8 ], [BLOCK_4X16, BLOCK_4X8 ] ],
   [  [ BLOCK_16X4, BLOCK_16X4 ], [BLOCK_8X4, BLOCK_8X4 ] ],
   [  [ BLOCK_8X32, BLOCK_8X16 ], [BLOCK_INVALID, BLOCK_4X16 ] ],
   [  [ BLOCK_32X8, BLOCK_INVALID ], [BLOCK_16X8, BLOCK_16X4 ] ],
   [  [ BLOCK_16X64, BLOCK_16X32 ], [BLOCK_INVALID, BLOCK_8X32 ] ],
   [  [ BLOCK_64X16, BLOCK_INVALID ], [BLOCK_32X16, BLOCK_32X8 ] ],
+  [  [ BLOCK_32X128, BLOCK_32X64 ], [ BLOCK_INVALID, BLOCK_16X64 ] ],
+  [  [ BLOCK_128X32, BLOCK_INVALID ], [ BLOCK_64X32, BLOCK_64X16 ] ],
 ];
 
 pub fn get_plane_block_size(bsize: BlockSize, subsampling_x: usize, subsampling_y: usize)
@@ -217,18 +222,18 @@ static size_group_lookup: [u8; BlockSize::BLOCK_SIZES_ALL] = [
   2, 2,
   2, 3,
   3, 3,
-  3, 0,
+  3, 3, 3, 3, 0,
   0, 1,
   1, 2,
-  2,
+  2, 3, 3
 ];
 
 static num_pels_log2_lookup: [u8; BlockSize::BLOCK_SIZES_ALL] = [
-  4, 5, 5, 6, 7, 7, 8, 9, 9, 10, 11, 11, 12, 6, 6, 8, 8, 10, 10];
+  4, 5, 5, 6, 7, 7, 8, 9, 9, 10, 11, 11, 12, 13, 13, 14, 6, 6, 8, 8, 10, 10, 12, 12];
 
-pub static subsize_lookup: [[BlockSize; BlockSize::BLOCK_SIZES_ALL]; PARTITION_TYPES] =
+pub static subsize_lookup: [[BlockSize; BlockSize::BLOCK_SIZES_ALL]; EXT_PARTITION_TYPES] =
 [
-  [ // PARTITION_NONE
+  [     // PARTITION_NONE
     //                            4X4
                                   BLOCK_4X4,
     // 4X8,        8X4,           8X8
@@ -239,10 +244,14 @@ pub static subsize_lookup: [[BlockSize; BlockSize::BLOCK_SIZES_ALL]; PARTITION_T
     BLOCK_16X32,   BLOCK_32X16,   BLOCK_32X32,
     // 32X64,      64X32,         64X64
     BLOCK_32X64,   BLOCK_64X32,   BLOCK_64X64,
+    // 64x128,     128x64,        128x128
+    BLOCK_64X128,  BLOCK_128X64,  BLOCK_128X128,
     // 4X16,       16X4,          8X32
     BLOCK_4X16,    BLOCK_16X4,    BLOCK_8X32,
     // 32X8,       16X64,         64X16
     BLOCK_32X8,    BLOCK_16X64,   BLOCK_64X16,
+    // 32x128,     128x32
+    BLOCK_32X128,  BLOCK_128X32
   ], [  // PARTITION_HORZ
     //                            4X4
                                   BLOCK_INVALID,
@@ -254,10 +263,14 @@ pub static subsize_lookup: [[BlockSize; BlockSize::BLOCK_SIZES_ALL]; PARTITION_T
     BLOCK_INVALID, BLOCK_INVALID, BLOCK_32X16,
     // 32X64,      64X32,         64X64
     BLOCK_INVALID, BLOCK_INVALID, BLOCK_64X32,
+    // 64x128,     128x64,        128x128
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_128X64,
     // 4X16,       16X4,          8X32
     BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
     // 32X8,       16X64,         64X16
     BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32x128,     128x32
+    BLOCK_INVALID, BLOCK_INVALID
   ], [  // PARTITION_VERT
     //                            4X4
                                   BLOCK_INVALID,
@@ -269,10 +282,14 @@ pub static subsize_lookup: [[BlockSize; BlockSize::BLOCK_SIZES_ALL]; PARTITION_T
     BLOCK_INVALID, BLOCK_INVALID, BLOCK_16X32,
     // 32X64,      64X32,         64X64
     BLOCK_INVALID, BLOCK_INVALID, BLOCK_32X64,
+    // 64x128,     128x64,        128x128
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_64X128,
     // 4X16,       16X4,          8X32
     BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
     // 32X8,       16X64,         64X16
     BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32x128,     128x32
+    BLOCK_INVALID, BLOCK_INVALID
   ], [  // PARTITION_SPLIT
     //                            4X4
                                   BLOCK_INVALID,
@@ -284,10 +301,128 @@ pub static subsize_lookup: [[BlockSize; BlockSize::BLOCK_SIZES_ALL]; PARTITION_T
     BLOCK_INVALID, BLOCK_INVALID, BLOCK_16X16,
     // 32X64,      64X32,         64X64
     BLOCK_INVALID, BLOCK_INVALID, BLOCK_32X32,
+    // 64x128,     128x64,        128x128
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_64X64,
     // 4X16,       16X4,          8X32
     BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
     // 32X8,       16X64,         64X16
     BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32x128,     128x32
+    BLOCK_INVALID, BLOCK_INVALID
+  ], [  // PARTITION_HORZ_A
+    //                            4X4
+                                  BLOCK_INVALID,
+    // 4X8,        8X4,           8X8
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_8X4,
+    // 8X16,       16X8,          16X16
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_16X8,
+    // 16X32,      32X16,         32X32
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_32X16,
+    // 32X64,      64X32,         64X64
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_64X32,
+    // 64x128,     128x64,        128x128
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_128X64,
+    // 4X16,       16X4,          8X32
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32X8,       16X64,         64X16
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32x128,     128x32
+    BLOCK_INVALID, BLOCK_INVALID
+  ], [  // PARTITION_HORZ_B
+    //                            4X4
+                                  BLOCK_INVALID,
+    // 4X8,        8X4,           8X8
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_8X4,
+    // 8X16,       16X8,          16X16
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_16X8,
+    // 16X32,      32X16,         32X32
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_32X16,
+    // 32X64,      64X32,         64X64
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_64X32,
+    // 64x128,     128x64,        128x128
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_128X64,
+    // 4X16,       16X4,          8X32
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32X8,       16X64,         64X16
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32x128,     128x32
+    BLOCK_INVALID, BLOCK_INVALID
+  ], [  // PARTITION_VERT_A
+    //                            4X4
+                                  BLOCK_INVALID,
+    // 4X8,        8X4,           8X8
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_4X8,
+    // 8X16,       16X8,          16X16
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_8X16,
+    // 16X32,      32X16,         32X32
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_16X32,
+    // 32X64,      64X32,         64X64
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_32X64,
+    // 64x128,     128x64,        128x128
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_64X128,
+    // 4X16,       16X4,          8X32
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32X8,       16X64,         64X16
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32x128,     128x32
+    BLOCK_INVALID, BLOCK_INVALID
+  ], [  // PARTITION_VERT_B
+    //                            4X4
+                                  BLOCK_INVALID,
+    // 4X8,        8X4,           8X8
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_4X8,
+    // 8X16,       16X8,          16X16
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_8X16,
+    // 16X32,      32X16,         32X32
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_16X32,
+    // 32X64,      64X32,         64X64
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_32X64,
+    // 64x128,     128x64,        128x128
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_64X128,
+    // 4X16,       16X4,          8X32
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32X8,       16X64,         64X16
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32x128,     128x32
+    BLOCK_INVALID, BLOCK_INVALID
+  ], [  // PARTITION_HORZ_4
+    //                            4X4
+                                  BLOCK_INVALID,
+    // 4X8,        8X4,           8X8
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 8X16,       16X8,          16X16
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_16X4,
+    // 16X32,      32X16,         32X32
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_32X8,
+    // 32X64,      64X32,         64X64
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_64X16,
+    // 64x128,     128x64,        128x128
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_128X32,
+    // 4X16,       16X4,          8X32
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32X8,       16X64,         64X16
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32x128,     128x32
+    BLOCK_INVALID, BLOCK_INVALID
+  ], [  // PARTITION_VERT_4
+    //                            4X4
+                                  BLOCK_INVALID,
+    // 4X8,        8X4,           8X8
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 8X16,       16X8,          16X16
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_4X16,
+    // 16X32,      32X16,         32X32
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_8X32,
+    // 32X64,      64X32,         64X64
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_16X64,
+    // 64x128,     128x64,        128x128
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_32X128,
+    // 4X16,       16X4,          8X32
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32X8,       16X64,         64X16
+    BLOCK_INVALID, BLOCK_INVALID, BLOCK_INVALID,
+    // 32x128,     128x32
+    BLOCK_INVALID, BLOCK_INVALID
   ]
 ];
 
