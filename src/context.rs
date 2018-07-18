@@ -50,6 +50,8 @@ const MAX_ANGLE_DELTA: usize = 3;
 const DIRECTIONAL_MODES: usize = 8;
 const KF_MODE_CONTEXTS: usize = 5;
 
+const EXT_PARTITION_TYPES: usize = 10;
+
 const EXT_TX_SIZES: usize = 4;
 const EXT_TX_SET_TYPES: usize = 9;
 const EXT_TX_SETS_INTRA: usize = 3;
@@ -891,7 +893,7 @@ pub fn uv_intra_mode_to_tx_type_context(pred: PredictionMode) -> TxType {
 
 extern "C" {
   static default_partition_cdf:
-    [[u16; PARTITION_TYPES + 1]; PARTITION_CONTEXTS];
+    [[u16; EXT_PARTITION_TYPES + 1]; PARTITION_CONTEXTS];
   static default_kf_y_mode_cdf:
     [[[u16; INTRA_MODES + 1]; KF_MODE_CONTEXTS]; KF_MODE_CONTEXTS];
   static default_if_y_mode_cdf: [[u16; INTRA_MODES + 1]; BLOCK_SIZE_GROUPS];
@@ -943,7 +945,7 @@ pub struct SCAN_ORDER {
 
 #[derive(Clone)]
 pub struct CDFContext {
-  partition_cdf: [[u16; PARTITION_TYPES + 1]; PARTITION_CONTEXTS],
+  partition_cdf: [[u16; EXT_PARTITION_TYPES + 1]; PARTITION_CONTEXTS],
   kf_y_cdf: [[[u16; INTRA_MODES + 1]; KF_MODE_CONTEXTS]; KF_MODE_CONTEXTS],
   y_mode_cdf: [[u16; INTRA_MODES + 1]; BLOCK_SIZE_GROUPS],
   uv_mode_cdf: [[[u16; UV_INTRA_MODES + 1]; INTRA_MODES]; 2],
@@ -1694,6 +1696,22 @@ impl ContextWriter {
       cdf_in,
       PartitionType::PARTITION_SPLIT as usize
     );
+    out[0] -= ContextWriter::cdf_element_prob(
+      cdf_in,
+      PartitionType::PARTITION_HORZ_A as usize
+    );
+    out[0] -= ContextWriter::cdf_element_prob(
+      cdf_in,
+      PartitionType::PARTITION_HORZ_B as usize
+    );
+    out[0] -= ContextWriter::cdf_element_prob(
+      cdf_in,
+      PartitionType::PARTITION_VERT_A as usize
+    );
+    out[0] -= ContextWriter::cdf_element_prob(
+      cdf_in,
+      PartitionType::PARTITION_HORZ_4 as usize
+    );
     out[0] = 32768 - out[0];
     out[1] = 0;
   }
@@ -1710,6 +1728,22 @@ impl ContextWriter {
       cdf_in,
       PartitionType::PARTITION_SPLIT as usize
     );
+    out[0] -= ContextWriter::cdf_element_prob(
+      cdf_in,
+      PartitionType::PARTITION_HORZ_A as usize
+    );
+    out[0] -= ContextWriter::cdf_element_prob(
+      cdf_in,
+      PartitionType::PARTITION_VERT_A as usize
+    );
+    out[0] -= ContextWriter::cdf_element_prob(
+      cdf_in,
+      PartitionType::PARTITION_VERT_B as usize
+    );
+    out[0] -= ContextWriter::cdf_element_prob(
+      cdf_in,
+      PartitionType::PARTITION_VERT_4 as usize
+    );
     out[0] = 32768 - out[0];
     out[1] = 0;
   }
@@ -1722,7 +1756,11 @@ impl ContextWriter {
     let has_rows = (bo.y + hbs) < self.bc.rows;
     let ctx = self.bc.partition_plane_context(&bo, bsize);
     assert!(ctx < PARTITION_CONTEXTS);
-    let partition_cdf = &mut self.fc.partition_cdf[ctx];
+    let partition_cdf = if bsize <= BlockSize::BLOCK_8X8 {
+      &mut self.fc.partition_cdf[ctx][..5]
+    } else {
+      &mut self.fc.partition_cdf[ctx]
+    };
 
     if !has_rows && !has_cols {
       return;
