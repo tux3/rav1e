@@ -1604,7 +1604,8 @@ bsize: BlockSize, bo: &BlockOffset) -> f64 {
 
     subsize = get_subsize(bsize, partition);
 
-    if bsize >= BlockSize::BLOCK_8X8 {
+    if bsize >= BlockSize::BLOCK_8X8 &&
+        (bsize == BlockSize::BLOCK_8X8 || partition != PartitionType::PARTITION_SPLIT) {
         cw.bc.update_partition_context(bo, subsize, bsize);
     }
 

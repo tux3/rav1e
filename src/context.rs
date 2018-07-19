@@ -1,5 +1,5 @@
-// Copyright (c) 2017-2018, The rav1e contributors. All rights reserved
 //
+// Copyright (c) 2017-2018, The rav1e contributors. All rights reserved
 // This source code is subject to the terms of the BSD 2 Clause License and
 // the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
 // was not distributed with this source code in the LICENSE file, you can
@@ -30,7 +30,7 @@ const PARTITION_PLOFFSET: usize = 4;
 const PARTITION_BLOCK_SIZES: usize = 4 + 1;
 const PARTITION_CONTEXTS_PRIMARY: usize = PARTITION_BLOCK_SIZES * PARTITION_PLOFFSET;
 const PARTITION_CONTEXTS: usize = PARTITION_CONTEXTS_PRIMARY;
-pub const PARTITION_TYPES: usize = 10;
+pub const PARTITION_TYPES: usize = 4;
 
 pub const MI_SIZE_LOG2: usize = 2;
 const MI_SIZE: usize = (1 << MI_SIZE_LOG2);
@@ -1892,13 +1892,14 @@ impl ContextWriter {
   pub fn write_partition(
     &mut self, bo: &BlockOffset, p: PartitionType, bsize: BlockSize
   ) {
+    assert!(bsize >= BlockSize::BLOCK_8X8 );
     let hbs = bsize.width_mi() / 2;
     let has_cols = (bo.x + hbs) < self.bc.cols;
     let has_rows = (bo.y + hbs) < self.bc.rows;
     let ctx = self.bc.partition_plane_context(&bo, bsize);
     assert!(ctx < PARTITION_CONTEXTS);
     let partition_cdf = if bsize <= BlockSize::BLOCK_8X8 {
-      &mut self.fc.partition_cdf[ctx][..5]
+      &mut self.fc.partition_cdf[ctx][..PARTITION_TYPES+1]
     } else {
       &mut self.fc.partition_cdf[ctx]
     };
@@ -1910,6 +1911,7 @@ impl ContextWriter {
     if has_rows && has_cols {
       symbol!(self, p as u32, partition_cdf);
     } else if !has_rows && has_cols {
+      assert!(bsize > BlockSize::BLOCK_8X8);
       let mut cdf = [0u16; 2];
       ContextWriter::partition_gather_vert_alike(
         &mut cdf,
@@ -1918,6 +1920,7 @@ impl ContextWriter {
       );
       self.w.cdf((p == PartitionType::PARTITION_SPLIT) as u32, &cdf);
     } else {
+      assert!(bsize > BlockSize::BLOCK_8X8);
       let mut cdf = [0u16; 2];
       ContextWriter::partition_gather_horz_alike(
         &mut cdf,
